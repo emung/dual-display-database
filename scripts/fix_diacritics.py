@@ -24,14 +24,23 @@ MOJIBAKE = set("ãºªþÞ")
 COMMA_BELOW = str.maketrans("şŞţŢ", "șȘțȚ")
 # Non-ASCII characters expected in correct Romanian text.
 ALLOWED = set("ăâîșțĂÂÎȘȚ„”“«»–—…’")
+# Typos in the source: "à" (cp1250 "ŕ") was typed instead of "ă"/"a".
+TYPOS = {
+    "ce-nseamnŕ": "ce-nseamnă",
+    "aratatŕ": "arătată",
+    "ŕ venit": "a venit",
+}
 
 
 def repair(text):
     """Return the repaired text, or None if it is not cp1252-mojibake."""
     try:
-        return text.encode("cp1252").decode("cp1250").translate(COMMA_BELOW)
+        fixed = text.encode("cp1252").decode("cp1250").translate(COMMA_BELOW)
     except UnicodeError:
         return None
+    for wrong, right in TYPOS.items():
+        fixed = fixed.replace(wrong, right)
+    return fixed
 
 
 def default_files():
