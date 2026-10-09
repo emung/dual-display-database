@@ -21,9 +21,13 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 SKIP = {"video-files.csv"}
 
 MOJIBAKE = set("ãºªþÞ")
-COMMA_BELOW = str.maketrans("şŞţŢ", "șȘțȚ")
-# Non-ASCII characters expected in correct Romanian text.
-ALLOWED = set("ăâîșțĂÂÎȘȚ„”“«»–—…’")
+# Cedilla ş/ţ -> comma-below ș/ț; "ä" is a typo for "ă" (not used in Romanian).
+CHAR_FIXES = str.maketrans("şŞţŢä", "șȘțȚă")
+# Soft hyphens are invisible junk next to real hyphens ("Lauda-\xadL").
+SOFT_HYPHEN = "\xad"
+# Non-ASCII characters expected in the text: Romanian letters, punctuation,
+# and characters used on purpose in song texts (separators, repeat marks, ...).
+ALLOWED = set("ăâîșțĂÂÎȘȚ„”“‘’«»–—…©·×´\xa0")
 # Typos in the source: "à" (cp1250 "ŕ") was typed instead of "ă"/"a".
 TYPOS = {
     "ce-nseamnŕ": "ce-nseamnă",
@@ -33,9 +37,10 @@ TYPOS = {
 
 
 def repair(text):
-    """Return the repaired text, or None if it is not cp1252-mojibake."""
+    """Return the repaired text (same length as the input), or None if it is
+    not cp1252-mojibake. Soft hyphens are removed separately in fix()."""
     try:
-        fixed = text.encode("cp1252").decode("cp1250").translate(COMMA_BELOW)
+        fixed = text.encode("cp1252").decode("cp1250").translate(CHAR_FIXES)
     except UnicodeError:
         return None
     for wrong, right in TYPOS.items():
@@ -76,6 +81,9 @@ def fix(paths, dry_run):
         changes = Counter(
             f"{a}->{b}" for a, b in zip(text, fixed) if a != b
         )
+        if fixed.count(SOFT_HYPHEN):
+            changes["soft hyphen removed"] = fixed.count(SOFT_HYPHEN)
+            fixed = fixed.replace(SOFT_HYPHEN, "")
         unexpected = Counter(
             c for c in fixed if ord(c) > 127 and c not in ALLOWED
         )
