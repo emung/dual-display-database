@@ -1,0 +1,3 @@
+SettID,SettName,FontColor,BorderColor,ShadowColor,UseBorder,UseShadow,Align,FontName,FontStyle,FontCharSet,WordWrap
+1,"galben","clYellow","clBlack","clBlack",1,1,5,"Tahoma","Bold",238,0
+2,"Negru","clBlack","clBlack","clBlack",0,0,5,"Tahoma","Bold",238,0
