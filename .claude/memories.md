@@ -4,3 +4,5 @@
 - `scripts/fix_diacritics.py` repairs this (`encode cp1252 → decode cp1250`, then cedilla ş/ţ → comma-below ș/ț). It writes `<name>.fixed.csv` in UTF-8, skips files that are already fixed, and `--check` detects leftover mojibake.
 - The target is a new UTF-8 app. The legacy Delphi app (Tahoma, charset 238) cannot render comma-below ș/ț, so do not write the fixed text back into `Baza.mdb`.
 - `Baza.mdb` is JET4: the mojibake is stored in the DB itself (`MDB_JET3_CHARSET` has no effect), so every `mdb-export` must be followed by `scripts/fix_diacritics.py`.
+- `scripts/export_songs.py <csv>` exports `cantari-textele` rows with `Stearsa = 0` to `output/cantari/<Titlu>.txt` (UTF-8) for import into FreeShow. It imports `repair()` from `fix_diacritics.py`, so raw exports work. Lines holding only `---`-style separators are emptied (not removed) so FreeShow splits verses. `output/` is git-ignored.
+- Never run export scripts against the real `cantari-textele*.csv` unless the user asks; test with a small `test.csv` or a synthetic CSV.
