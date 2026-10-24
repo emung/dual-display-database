@@ -1,5 +1,18 @@
 # dual-display-database
 
+## Quick start
+
+Export the songs from `Baza.mdb` as `.txt` files for FreeShow (run from the repo root, needs Python 3):
+
+```bash
+brew install mdbtools                                       # once
+mdb-export Baza.mdb Cantari_Textele > cantari-textele.csv   # export the songs table
+python3 scripts/fix_diacritics.py cantari-textele.csv       # repair diacritics -> cantari-textele.fixed.csv
+python3 scripts/export_songs.py cantari-textele.fixed.csv   # write output/cantari/<Titlu>.txt
+```
+
+Then import the files from `output/cantari/` into FreeShow. The sections below explain each step.
+
 ## Exporting tables from Baza.mdb
 
 The CSV exports are not part of the repo. Create them with [mdbtools](https://github.com/mdbtools/mdbtools)
@@ -55,6 +68,12 @@ python3 scripts/export_songs.py cantari-textele.fixed.csv --out <dir>  # write t
 ```
 
 - The raw `cantari-textele.csv` works too: mojibake is repaired the same way as in `fix_diacritics.py`.
-- Verse separator lines (`---`, `----`, `---.`) become empty lines, so FreeShow splits verses into slides.
+- Every verse is split into slides of two lines, separated by an empty line (FreeShow starts a new
+  slide at each empty line). An odd last line becomes its own slide, e.g. 7 lines → 2 + 2 + 2 + 1.
+- Verses are separated by empty lines or separator lines (`---`, `----`, `---.`); separators are removed.
+- A refrain that starts a verse is split off as its own block, so the slide pairs restart after it:
+  `/: … :/`, `//: … ://`, `//; … ;//` end at the closing marker; `R:`, `Ref:`, `Refren` run to the end
+  of the verse. A repetition inside a verse (`/: … :/` after verse lines, or `/: x :/ 3x` on one line)
+  stays part of the verse. Markers are kept in the text.
 - Characters not allowed in file names (`/ : ? * " < > |`) are replaced with `-`.
 - Duplicate titles (also differing only in case) get the song ID appended, e.g. `Aleluia (3).txt`.

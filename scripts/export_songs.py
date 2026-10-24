@@ -11,7 +11,12 @@ Usage:
 
 Titles that clash (also case-insensitively, as on macOS) get " (<CantareID>)"
 appended. Characters not allowed in file names are replaced with "-".
-Lines that only hold a verse separator ("---") are emptied, not removed.
+
+Every verse is split into slides of two lines (an empty line between slides,
+an odd last line becomes its own slide). Verses are separated by empty lines
+or "---" lines. A refrain that starts a verse block ("/: … :/", "//: … ://",
+"//; … ;//", "R: …") is split off as its own block; a repetition inside a
+verse stays part of it. Markers are kept in the text.
 """
 import argparse
 import csv
@@ -25,9 +30,52 @@ from fix_diacritics import MOJIBAKE, SOFT_HYPHEN, repair
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_OUT = REPO_ROOT / "output" / "cantari"
 INVALID_CHARS = re.compile(r'[/\\:*?"<>|\x00-\x1f]')
-# Verse separators ("---", "----", "---.") become empty lines so FreeShow
-# splits the verses into slides.
-SEPARATOR = re.compile(r"^[ \t\xa0]*-{3,}\.?[ \t\xa0]*$", re.MULTILINE)
+# Verse separators ("---", "----", "---.") end a block like an empty line.
+SEPARATOR = re.compile(r"^[ \t\xa0]*-{3,}\.?[ \t\xa0]*$")
+# Refrain markers at the start of a block: "/: … :/" (also "//:", "//;",
+# "/;") ends at the closing marker, "R: …" (also "Ref:", "Refren") ends with
+# the block.
+SLASH_START = re.compile(r"^\s*/{1,2}\s*[:;]")
+LABEL_START = re.compile(r"^\s*(?:(?:r|ref|refren)\s*[:.]|refren\b)", re.IGNORECASE)
+SLASH_END = re.compile(r"[:;]/")
+LINES_PER_SLIDE = 2
+
+
+def blocks(text):
+    """Split text into blocks of non-empty lines at empty lines and separators."""
+    block = []
+    for line in text.splitlines() + [""]:
+        if line.strip() and not SEPARATOR.match(line):
+            block.append(line.rstrip())
+        elif block:
+            yield block
+            block = []
+
+
+def segments(block):
+    """Split a refrain at the start of a block off the verse lines after it.
+
+    A repetition that does not start the block, or that opens and closes on
+    the first line ("/: … :/ 3x"), stays part of the verse.
+    """
+    if LABEL_START.match(block[0]):
+        return [block]
+    if SLASH_START.match(block[0]) and not SLASH_END.search(block[0]):
+        for i, line in enumerate(block):
+            if SLASH_END.search(line):
+                rest = block[i + 1:]
+                return [block[:i + 1]] + (segments(rest) if rest else [])
+    return [block]
+
+
+def slides(text):
+    """Return the text with an empty line after every two lines of a block."""
+    out = []
+    for block in blocks(text):
+        for segment in segments(block):
+            for i in range(0, len(segment), LINES_PER_SLIDE):
+                out.append("\n".join(segment[i:i + LINES_PER_SLIDE]))
+    return "\n\n".join(out) + "\n" if out else ""
 
 
 def load_rows(path):
@@ -58,8 +106,7 @@ def export(rows, out_dir, dry_run):
             stem = f"{stem} ({row['CantareID']})"
         taken.add(stem.lower())
 
-        content = row["Textul"].replace("\r\n", "\n").replace("\r", "\n")
-        content = SEPARATOR.sub("", content)
+        content = slides(row["Textul"])
         if not dry_run:
             (out_dir / f"{stem}.txt").write_text(content, encoding="utf-8")
     print(f"{'DRY ' if dry_run else ''}exported {len(songs)} of {len(rows)} rows -> {out_dir}")
