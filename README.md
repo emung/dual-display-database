@@ -1,5 +1,31 @@
 # dual-display-database
 
+## Exporting tables from Baza.mdb
+
+The CSV exports are not part of the repo. Create them with [mdbtools](https://github.com/mdbtools/mdbtools)
+(`brew install mdbtools`):
+
+```bash
+mdb-tables -1 Baza.mdb                                      # list all tables, one per line
+mdb-schema -T Cantari_Textele Baza.mdb                      # show columns and types of a table
+mdb-export Baza.mdb Cantari_Textele > cantari-textele.csv   # export one table to CSV
+```
+
+Table names are case-sensitive. The file names used by the scripts:
+
+| Table | CSV file |
+| --- | --- |
+| `Biblia_Capitole` | `biblia-capitole.csv` |
+| `Biblia_Carti` | `biblia-carti.csv` |
+| `Biblia_Versete` | `biblia-versete.csv` |
+| `Cantari_Textele` | `cantari-textele.csv` |
+| `Cantari_Versuri` | `cantari-versuri.csv` |
+| `CustomTextSettings` | `custom-text-settings.csv` |
+| `Diacritice` | `diacritice.csv` |
+| `Video_Files` | `video-files.csv` |
+
+Every export contains broken diacritics, so run `fix_diacritics.py` on it afterwards (see below).
+
 ## Fixing Romanian diacritics in CSV exports
 
 `Baza.mdb` stores text as Windows-1250, but the CSV exports were decoded as
@@ -13,7 +39,6 @@ python3 scripts/fix_diacritics.py --check     # exit 1 if any *.fixed.csv still 
 
 Pass file names to process specific files. Already-fixed files are skipped.
 
-Re-export tables with `mdb-export Baza.mdb <Table> > <table>.csv`, then run the script.
 `Baza.mdb` is JET4 (Unicode), so the wrong characters are stored in the database itself;
 `MDB_JET3_CHARSET` has no effect and the script is always needed.
 
