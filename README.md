@@ -11,6 +11,12 @@ python3 scripts/fix_diacritics.py cantari-textele.csv       # repair diacritics 
 python3 scripts/export_songs.py cantari-textele.fixed.csv   # write output/cantari/<Titlu>.txt
 ```
 
+Or all three steps in one line (after installing `mdbtools`):
+
+```bash
+mdb-export Baza.mdb Cantari_Textele > cantari-textele.csv && python3 scripts/fix_diacritics.py cantari-textele.csv && python3 scripts/export_songs.py cantari-textele.fixed.csv
+```
+
 Then import the files from `output/cantari/` into FreeShow. The sections below explain each step.
 
 ## Exporting tables from Baza.mdb
