@@ -71,15 +71,24 @@ Pass file names to process specific files. Already-fixed files are skipped.
 python3 scripts/export_songs.py cantari-textele.fixed.csv --dry-run    # count songs, write nothing
 python3 scripts/export_songs.py cantari-textele.fixed.csv              # write output/cantari/*.txt
 python3 scripts/export_songs.py cantari-textele.fixed.csv --out <dir>  # write to another folder
+python3 scripts/export_songs.py cantari-textele.fixed.csv --two-lines  # split verses into 2-line slides
 ```
 
 - The raw `cantari-textele.csv` works too: mojibake is repaired the same way as in `fix_diacritics.py`.
-- Every verse is split into slides of two lines, separated by an empty line (FreeShow starts a new
-  slide at each empty line). An odd last line becomes its own slide, e.g. 7 lines → 2 + 2 + 2 + 1.
 - Verses are separated by empty lines or separator lines (`---`, `----`, `---.`); separators are removed.
-- A refrain that starts a verse is split off as its own block, so the slide pairs restart after it:
-  `/: … :/`, `//: … ://`, `//; … ;//` end at the closing marker; `R:`, `Ref:`, `Refren` run to the end
-  of the verse. A repetition inside a verse (`/: … :/` after verse lines, or `/: x :/ 3x` on one line)
-  stays part of the verse. Markers are kept in the text.
+  By default each verse is one slide, with one empty line between verses (FreeShow starts a new slide
+  at each empty line).
+- A refrain that starts a verse is split off as its own block: `/: … :/`, `//: … ://`, `//; … ;//`
+  end at the closing marker; `R:`, `Ref:`, `Refren` run to the end of the verse. A repetition inside a
+  verse (`/: … :/` after verse lines, or `/: x :/ 3x` on one line) stays part of the verse. Markers are
+  kept in the text.
+- Every block starts with a FreeShow group label on its own line, directly above the text:
+  `[Chorus]` for a refrain or for a block that occurs more than once in the song, otherwise
+  `[Verse N]`. `N` is taken from a leading `1.`, `2.`, … (the number stays in the text) or counted in
+  order.
+- With `--two-lines`, every block is split into slides of two lines. An odd last line becomes its own
+  slide, e.g. 7 lines → 2 + 2 + 2 + 1. FreeShow keeps all slides after a label in that group.
+- `---` inside a line becomes `—` (FreeShow would move the rest of the slide to the notes), and lines
+  holding only `x2` … `x9` are dropped (FreeShow would repeat the section).
 - Characters not allowed in file names (`/ : ? * " < > |`) are replaced with `-`.
 - Duplicate titles (also differing only in case) get the song ID appended, e.g. `Aleluia (3).txt`.
